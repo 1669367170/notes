@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 #include "../src/common_utils.h"

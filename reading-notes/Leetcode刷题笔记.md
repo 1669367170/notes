@@ -1,5 +1,123 @@
 参考链接：https://github.com/youngyangyang04/leetcode-master
 
+## 数组
+
+### 1. 题目分类大纲
+
+#### 二分查找
+
+该类型题目：704
+
+> 使用二分查找的前提：**1）数组为有序数组**；2）一般数组中无重复元素，否则查找的结果不唯一。
+
+> 边界条件处理：区间定义一般为两种，左闭右闭即[left, right]，左闭右开即[left, right)。
+>
+> 1）左闭右闭区间， `while(left <= right)，要使用<=，因为left == right是有意义的（target在[left, right]区间）；`
+>
+> `同时right要赋值middle-1`；
+>
+> 2）左闭右开区间，`while(left < right)，要使用<，因为left == right是没有意义的（target在[left, right)区间）；同时right要赋值middle`。
+
+#### 双指针法
+
+该类型题目：27
+
+> 双指针法（快慢指针法）：**通过一个快指针和慢指针在一个for循环下完成两个for循环的工作。**时间复杂度从O(n^2)->O(n)。常用于数组、链表、字符串等操作的题中。
+
+### 2. 具体题目和代码实现
+
+#### [第704题. 二分查找](https://leetcode-cn.com/problems/binary-search/)
+
+给定一个n个元素有序的（升序）整型数组`nums`和一个目标值`target`，写一个函数搜索`nums`中的`target`，如果目标值存在返回下标，否则返回-1。
+
+示例1：
+
+输入：`nums = [-1, 0, 3, 5, 9, 12]`，`target = 9`
+
+输出：4
+
+示例2：
+
+输入：`nums = [-1, 0, 3, 5, 9, 12], target = 2`
+
+输出：-1（解释：2不存在`nums`中，因此返回-1）
+
+【代码实现】
+
+```c++
+namespace _704 {
+    class Solution {
+    public:
+        int search(std::vector<int> &nums, int target) {
+            int left = 0, right = nums.size() - 1; // 左闭右闭区间 [left, right]
+            while (left <= right) { // left == right依然有效，所以<=
+                int mid = (right - left) / 2 + left;
+                if (nums[mid] > target) {
+                    right = mid - 1;
+                } else if (nums[mid] < target) {
+                    left = mid + 1;
+                } else {
+                    return mid;
+                }
+            }
+            return -1;
+        }
+    };
+}
+```
+
+#### [第27题. 移除元素](https://leetcode-cn.com/problems/remove-element/)
+
+给你一个数组`nums`和一个值`val`，你需要原地移除所有数值等于`val`的元素，并返回移除后数组的新长度。
+
+不要使用额外的数组空间，你必须仅使用O(1)额外空间并原地修改输入数组。
+
+元素的顺序可以改变，你不需要考虑数组中超出新长度后面的元素。
+
+示例1：
+
+输入：`nums = [3, 2, 2, 3]，val = 3`
+
+输出：`2，nums = [2, 2]`
+
+【代码实现】 思路：双指针
+
+```c++
+namespace _27 {
+    class Solution {
+    public:
+        int removeElement(std::vector<int> &nums, int val) {
+            int slow = 0, fast = 0;
+            for (; fast < nums.size(); ++fast) {
+                if (nums[fast] != val) {
+                    nums[slow++] = nums[fast];
+                }
+            }
+            return slow;
+#if 0
+            // 自己的初版解法
+            int left = 0, right = nums.size() - 1;
+            while (left <= right) {
+                // 从前往后，找元素值等于val的位置
+                while (left <= right && nums[left] != val) {
+                    left++;
+                }
+                // 从后往前，找元素等于val
+                while (left <= right && nums[right] == val) {
+                    right--;
+                }
+                if (left > right) {
+                    return left;
+                }
+                std::swap(nums[left], nums[right]);
+            }
+            return left;
+#endif
+        }
+    };
+}
+```
+
 ## 回溯法
 
 ### 1. 回溯法介绍
@@ -97,7 +215,7 @@ void backtracking(参数) {
 ]
 ```
 
-代码实现：
+【代码实现】
 
 ```c++
 namespace _77 {

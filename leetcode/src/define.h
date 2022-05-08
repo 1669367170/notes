@@ -1,1 +1,2 @@
-#define BackTracking
+#define Array
+//#define BackTracking

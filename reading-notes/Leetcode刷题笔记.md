@@ -20,7 +20,7 @@
 
 #### 双指针法
 
-该类型题目：27
+该类型题目：27，977
 
 > 双指针法（快慢指针法）：**通过一个快指针和慢指针在一个for循环下完成两个for循环的工作。**时间复杂度从O(n^2)->O(n)。常用于数组、链表、字符串等操作的题中。
 
@@ -113,6 +113,44 @@ namespace _27 {
             }
             return left;
 #endif
+        }
+    };
+}
+```
+
+#### [第977题. 有序数组的平方](https://leetcode.cn/problems/squares-of-a-sorted-array/)
+
+给你一个按非递减顺序排序的整数数组nums，返回每个数字的平方组成的新数组，要求也按非递减顺序排序。
+
+示例1：
+
+输入：nums = [-4, -1, 0, 3, 10]
+
+输出：[0, 1, 9, 16, 100]
+
+【代码实现】思路：双指针，O(n)时间复杂度
+
+```c++
+namespace _977 {
+    class Solution {
+    public:
+        std::vector<int> sortedSquares(std::vector<int> &nums) {
+            // 复杂度O(n)解法
+            int n = nums.size();
+            std::vector<int> res(n);
+            int pos = n - 1;
+            for (int i = 0, j = n - 1; pos >= 0 && i <= j;) {
+                // 输入数组已排好序，考虑双指针，将绝对值大的数的平方放在新数组末尾
+                if (nums[i] * nums[i] > nums[j] * nums[j]) {
+                    res[pos] = nums[i] * nums[i];
+                    i++;
+                } else {
+                    res[pos] = nums[j] * nums[j];
+                    j--;
+                }
+                pos--;
+            }
+            return res;
         }
     };
 }

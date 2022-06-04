@@ -10,19 +10,29 @@
 
 > 使用二分查找的前提：**1）数组为有序数组**；2）一般数组中无重复元素，否则查找的结果不唯一。
 
-> 边界条件处理：区间定义一般为两种，左闭右闭即[left, right]，左闭右开即[left, right)。
+> 边界条件处理：区间定义一般为两种，左闭右闭即`[left, right]`，左闭右开即`[left, right)`。
 >
-> 1）左闭右闭区间， `while(left <= right)，要使用<=，因为left == right是有意义的（target在[left, right]区间）；`
+> 1）左闭右闭区间， `while(left <= right)`，要使用<=，因为`left == right`是有意义的（`target`在`[left, right]`区间）；同时`right`要赋值`middle-1`；
 >
-> `同时right要赋值middle-1`；
->
-> 2）左闭右开区间，`while(left < right)，要使用<，因为left == right是没有意义的（target在[left, right)区间）；同时right要赋值middle`。
+> 2）左闭右开区间，`while(left < right)`，要使用<，因为`left == right`是没有意义的（`target`在`[left, right)`区间）；同时`right`要赋值`middle`。
 
 #### 双指针法
 
 该类型题目：27，977
 
 > 双指针法（快慢指针法）：**通过一个快指针和慢指针在一个for循环下完成两个for循环的工作。**时间复杂度从O(n^2)->O(n)。常用于数组、链表、字符串等操作的题中。
+
+#### 滑动窗口法
+
+该类型题目：209题
+
+> 滑动窗口法：不断地调整子序列地起始位置和终止位置，从而得到我们想要的结果。（**也可以理解成双指针的法的一种**）
+>
+> 要实现滑动窗口，主要确定如下三点：
+>
+> - 窗口是什么？
+> - 如何移动窗口的起始位置？
+> - 如何移动窗口的结束位置？
 
 ### 2. 具体题目和代码实现
 
@@ -153,6 +163,62 @@ namespace _977 {
             return res;
         }
     };
+}
+```
+
+#### [第209题. 长度最小的子数组](https://leetcode.cn/problems/minimum-size-subarray-sum/)
+
+给你一个含有n个正整数的数组和一个正整数target。找出该数组中满足其和>=target的长度最小的连续子数组，并返回其长度。如果不存在符合条件的子数组，返回0。
+
+示例1：
+
+输入：target = 7，nums = [2, 3, 1, 2, 4, 3]
+
+输出：2
+
+解释：子数组[4, 3]是该条件下的长度最小的子数组
+
+【代码实现】思路：滑动窗口
+
+```c++
+namespace _209 {
+    class Solution {
+    public:
+        int minSubArrayLen(int target, std::vector<int> &nums) {
+            int minLen = INT_MAX;
+            int left = 0, sum = 0;
+            for (int right = 0; right < nums.size(); ++right) {
+                sum += nums[right];
+                // 滑动窗口，每次更新left(起始位置)，并不断判断子序列是否符合条件
+                while (sum >= target) {
+                    minLen = std::min(minLen, right - left + 1);
+                    sum -= nums[left++];
+                }
+            }
+            return minLen == INT_MAX ? 0 : minLen;
+#if 0		
+            // 自己的初版解法
+            if (nums.empty()) {
+                return 0;
+            }
+            int left = 0, right = 1, minLen = INT_MAX;
+            int sum = nums[left];
+            while (left <= right) {
+                if (sum >= target) {
+                    minLen = std::min(minLen, right - left);
+                    sum -= nums[left]; // 去掉最左边元素
+                    left++;
+                    continue;
+                }
+                if (right <= nums.size() - 1) { // right到头了
+                    sum += nums[right];
+                    ++right;
+                } else {
+                    ++left;
+                }
+            }
+            return minLen == INT_MAX ? 0 : minLen;
+#endif
 }
 ```
 

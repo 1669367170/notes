@@ -6,8 +6,9 @@
 template<typename T>
 void PrintVec(const std::vector<T> &vec) {
     for (const auto &item : vec) {
-        std::cout << item << "," << std::endl;
+        std::cout << item << ",";
     }
+    std::cout << std::endl;
 }
 
 template<typename T>

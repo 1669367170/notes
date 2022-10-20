@@ -57,6 +57,39 @@ void InsertSort(std::vector<int> &a) {
     }
 }
 
+void Merge(std::vector<int> &a, int l, int r) {
+    std::vector<int> help(r - l + 1);
+    int mid = l + ((r - l) >> 1);
+    int i = 0, p1 = l, p2 = mid + 1;
+    while (p1 <= mid && p2 <= r) {
+        help[i++] = a[p1] <= a[p2] ? a[p1++] : a[p2++];
+    }
+    while (p1 <= mid) {
+        help[i++] = a[p1++];
+    }
+    while (p2 <= r) {
+        help[i++] = a[p2++];
+    }
+    for (int i = 0; i < help.size(); ++i) {
+        a[l + i] = help[i];
+    }
+}
+
+// 归并排序 O(NlogN)
+/* master公式：T(N) = a * T(N/b) + O(N ^ d)
+ 1）log(b, a) > d  -> 复杂度为O(N ^ log(b, a))   b为底
+ 2）log(b, a) == d -> 复杂度为O(N ^ d * log N)
+ 3）log(b, a) < d -> 复杂度为O(N ^ d)*/
+void MergeSort(std::vector<int> &a, int l, int r) {
+    if (l == r) {
+        return;
+    }
+    int mid = l + ((r - l) >> 1);
+    MergeSort(a, 0, mid);     // 排序左边
+    MergeSort(a, mid + 1, r); // 排序右边
+    Merge(a, l, r);             // 合并
+}
+
 class TestArray {
 public:
     TestArray() = default;
@@ -93,5 +126,11 @@ TEST_F(SortTest, Bubble) {
 TEST_F(SortTest, Insert) {
     PrintVec(testArray.input);
     InsertSort(testArray.input);
+    EXPECT_EQ(testArray.input, testArray.truth);
+}
+
+TEST_F(SortTest, Merge) {
+    PrintVec(testArray.input);
+    MergeSort(testArray.input, 0, testArray.input.size() - 1);
     EXPECT_EQ(testArray.input, testArray.truth);
 }

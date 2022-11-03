@@ -90,6 +90,35 @@ void MergeSort(std::vector<int> &a, int l, int r) {
     Merge(a, l, r);             // 合并
 }
 
+int Partion(std::vector<int> &a, int left, int right) {
+    int target = a[left];
+    while (left < right) {
+        // 从右往左找到第一个小于目标数的数
+        while (left < right && a[right] >= target) {
+            --right;
+        }
+        a[left] = a[right];
+        // 从左往右找到第一个大于目标数的数
+        while (left < right && a[left] <= target) {
+            ++left;
+        }
+        a[right] = a[left];
+    }
+    a[left] = target;
+    return left;
+}
+
+// 快排母函数
+void QuickSort(std::vector<int> &a, int left, int right) {
+    if (left >= right) {
+        return;
+    }
+    // 基准位置
+    int pivot = Partion(a, left, right);
+    QuickSort(a, left, pivot);
+    QuickSort(a, pivot + 1, right);
+}
+
 class TestArray {
 public:
     TestArray() = default;
@@ -132,5 +161,11 @@ TEST_F(SortTest, Insert) {
 TEST_F(SortTest, Merge) {
     PrintVec(testArray.input);
     MergeSort(testArray.input, 0, testArray.input.size() - 1);
+    EXPECT_EQ(testArray.input, testArray.truth);
+}
+
+TEST_F(SortTest, Quick) {
+    PrintVec(testArray.input);
+    QuickSort(testArray.input, 0, testArray.input.size() - 1);
     EXPECT_EQ(testArray.input, testArray.truth);
 }

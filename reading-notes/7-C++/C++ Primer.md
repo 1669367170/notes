@@ -158,3 +158,54 @@ public:
 21、静态数据类型可以是不完全类型。（**static成员、指针都可以是不完全类型，对象必须是完全类型，需要知道分配多少空间**）
 
 22、可以使用静态成员作为默认实参，因为它本身并不是对象的一部分。
+
+## P8 C++标准库：IO类
+
+### 8.1 IO类
+
+23、IO库类型和头文件（w表示wchar_t）
+
+| 头文件   | 类型                                                         |
+| -------- | ------------------------------------------------------------ |
+| iostream | istream, wistream 从流中读取；ostream, wostream 写到流中去；iostream, wiostream 对流进行读写 |
+| fstream  | ifstream, wifstream 从文件中读取；ofstream, wofstream 写到文件中去；fstream, wfstream 读写文件 |
+| sstream  | istringstream, wistringstream 从string对象中读取；ostringstream, wostringstream 写到string对象中去；                          stringstream, wstringstream 对string对象进行读写 |
+
+24、IO对象不能拷贝或赋值。
+
+25、IO库条件状态。
+
+### 8.2 文件输入输出
+
+26、每个流文件都有一个关联的**文件模式**（fille mode）
+
+|             | 文件模式                                 |
+| ----------- | ---------------------------------------- |
+| in          | 以读方式打开                             |
+| out         | 以写方式打开                             |
+| app(append) | 追加：每次写操作前均定位到文件末尾       |
+| ate(at end) | 每次打开文件后立即定位到末尾             |
+| trunc       | 截断：如果打开的文件存在，其内容将被丢弃 |
+| binary      | 以二进制方式进行IO                       |
+
+### 8.3 string流
+
+27、IO类继承关系
+
+```mermaid
+graph TD
+iostream --> ostream & istream & stringstream & fstream
+istream --> ifstream & istringstream
+ostream --> ofstream & ostringstream
+```
+
+28、
+
+```C++
+sstream strm(s); // strm是一个sstream对象，保存string s的一个拷贝。此构造函数是explicit的。
+strm.str(); // 返回strm所保存的string的拷贝。
+strm.str(s); // 将string s拷贝到strm中。
+```
+
+29、string代表的是内存，istringstream是从内存读取数据，ostringstream是将数据写入内存。
+

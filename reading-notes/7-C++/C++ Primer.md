@@ -353,3 +353,108 @@ c.reserve(n); // 分配至少能容纳n个元素的内存空间
 - **reserve并不改变容器中元素的数量，它仅影响vector预分配多大的内存空间（容量）**。 
 
 - vector扩容一般是翻一倍，具体看编译器版本实现。
+
+### 9.5 额外的string操作
+
+45、额外的构造函数
+
+```C++
+n, len2和pos2都是无符号值
+string s(cp,n) // s是cp指向的数组中前n个字符的拷贝。此数组至少应该包含n个字符。
+string s(s2,pos2) // s是string s2从下标pos2开始的字符的拷贝。若pos2>s2.size()，构造函数的行为未定义。
+string s(s2,pos2,len2) // s是string s2从下标pos2开始len2个字符的拷贝。若pos2>s2.size()，构造函数的行为未定义。不管len2的值是多少，构造函数最多拷贝s2.size()-pos2个字符。
+```
+
+46、子字符串操作
+
+```C++
+s.substr(pos,n) // 返回一个string，包含s中从pos开始的n个字符的拷贝。pos的默认值为0。n的默认值为s.size()-pos，即拷贝从pos开始的所有字符。
+```
+
+47、插入操作
+
+```C++
+c.insert(s.size(), 5, '!'); // 在s末尾插入5个感叹号
+c.erase(s.size()-5, 5); // 在s删除最后5个字符
+
+// C风格字符数组的insert和assign版本
+const char *cp = "Stately, plump Buck";
+s.assign(cp, 7); // s = "Stately"
+s.insert(s.size(), cp+7); // s = "Stately, plump Buck"
+
+// 我们也可以指定来自其他string或字符串的字符插入到当前string中
+string s = "some string", s2 = "some other string";
+s.insert(0, s2); // 在s中位置0之前插入s2的拷贝
+s.insert(0, s2, 0, s2.size()); // 在s[0]之前插入s2中s2[0]开始的s2.size()个字符
+```
+
+48、append和replace函数
+
+```C++
+// append操作是在string末尾进行插入操作的一种简写形式
+string s("C++ Primer"), s2 = s;
+s.insert(s.size(), "4th Ed.") // s = "C++ Primer 4th Ed."
+s2.append("4th Ed."); // 等价方法， s=s2
+// replace操作是调用erase和insert的一种简写形式
+// 将"4th"替换为"5th"的等价方法
+s.erase(11, 3); // s = "C++ Primer Ed."
+s.insert(11, "5th"); // s = "C++ Primer 5th Ed."
+// 从位置11开始，删除3个字符并插入"5th"
+s2.replace(11, 3, "5th"); // 等价方法：s = s2
+// s.replace(11, 3, "Fifth"); 也可以，长度无需一样
+```
+
+49、string搜索操作
+
+```C++
+// 搜索操作返回指定字符出现的下标，如果未找到则返回npos。
+s.find(args) // 查找s中args第一次出现的位置
+s.rfind(args) // 查找s中args最后一次出现的位置
+s.find_first_of(args) // 在s中查找args中任何一个字符第一次出现的位置
+s.find_last_of(args) // 在s中查找args中任何一个字符最后一次出现的位置
+s.find_first_not_of(args) // 在s中查找第一个不在args中的字符
+s.find_last_not_of(args) // 在s中查找最后一个不在args中的字符
+    
+// 每个函数都有4个重载版本
+    args必须是以下形式
+c, pos		// 从s中位置pos开始查找字符c。pos默认为0
+s2, pos		// 从s中位置pos开始查找字符串s2。pos默认为0
+cp, pos		// 从s中位置pos开始查找指针cp指向的以空字符结尾的C风格字符串。pos默认为0
+cp, pos, n  // 从s中位置pos开始查找指针cp指向的数组的前n个字符。pos和n无默认值
+```
+
+- 每个搜索操作都返回一个string::size_type值。
+
+- 判断搜索到结尾：string::npos。
+
+50、s.compare的几种参数形式
+
+```C++
+s2 // 比较s和s2
+pos1, n1, s2 // 将s中从pos1开始的n1个字符与s2进行比较
+pos1, n1, s2, pos2, n2 // 将s中从pos1开始的n1个字符与s2中从pos2开始的n2个字符进行比较
+    
+cp // 比较s与cp指向的以空字符结尾的字符数组
+pos1, n1, cp // 将s中从pos1开始的n1个字符，与cp指向的以空字符结尾的字符数组进行比较
+pos1, n1, cp, n2 // 将s中从pos1开始的n1个字符与指针cp指向的地址开始的n2个字符进行比较
+```
+
+51、string和数值之间的转换
+
+```C++
+to_string(val) 	// 一组重载函数，返回数值val的string表示
+// 返回s的起始子串（表示整数内容）的数值，返回类型分别是int,long,unsigned long,long long, unsigned long long，b表示转换所用的基数，默认值是10。p是size_t指针，用来保存s中第一个非数值字符的下标，p默认为0，即函数不保存下标。
+stoi(s,p,b)
+stol
+stoul
+stoll
+stoull
+// 返回s的起始字串（表示浮点数内容）的数值，返回值类型分别是float,double或long double。参数p的作用与整数转换函数中一样。
+stof(s,p) 
+stod(s,p)
+stold(s,p)
+    
+std::string s2 = "pi=3.14!!!"
+d = stod(s2.substr(s2.find_first_of("+-.0123456789")));
+// d = stod(s2.substr(3)) -> d = stod("3.14!!!") -> d = 3.14
+```

@@ -458,3 +458,47 @@ std::string s2 = "pi=3.14!!!"
 d = stod(s2.substr(s2.find_first_of("+-.0123456789")));
 // d = stod(s2.substr(3)) -> d = stod("3.14!!!") -> d = 3.14
 ```
+
+### 9.6 容器适配器
+
+52、三个顺序容器适配器：stack、queue和priority_queue。
+
+53、所有的适配器都要求容器具有添加、删除以及方便访问尾元素的能力。
+
+54、所有容器适配器都支持的操作和类型
+
+```C++
+size_type	// 一种类型，足以保存当前类型的最大对象的大小。
+value_type	// 元素类型
+container_type	// 实现适配器的底层容器类型
+A a;		// 创建一个名为a的空适配器
+A a(c);		// 创建一个名为a的适配器，带有容器c的一个拷贝
+关系运算符	 // 每个适配器都支持所有关系运算符：==、!=、<、<=、>和>=，这些运算符返回底层容器的比较结果
+a.empty()
+a.size()
+swap(a,b)	// 交换a和b的内容，a和b必须有相同类型，包括底层容器类型也必须相同
+a.swap(b)
+```
+
+55、栈默认基于deque实现，也可以在list或vector之上实现。
+
+```C++
+s.pop()	// 删除栈顶元素，但不返回该元素值
+s.push(item) // 创建一个新元素压入栈顶，该元素通过拷贝或移动item而来，或者由args构造
+s.emplace(args)
+s.top() // 返回栈顶元素，但不将元素弹出栈
+```
+
+56、队列queue默认基于deque实现，priority_queue默认基于vector实现。queue也可以用list或vector实现，priority_queue也可以用deque实现。
+
+```C++
+q.pop() // 删除queue的首元素或priority_queue的最高优先级的元素，但不返回。
+q.front() // 返回首元素或尾元素，但不删除该元素
+q.back() // 只适用于queue
+q.top() // 返回最高优先级元素，但不删除该元素，只适用于priority_queue
+q.push(item) // 在queue末尾或priority_queue中恰当的位置创建一个元素，其值为item，或由args构造
+q.emplace(args)
+```
+
+
+

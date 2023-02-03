@@ -500,5 +500,94 @@ q.push(item) // 在queue末尾或priority_queue中恰当的位置创建一个元
 q.emplace(args)
 ```
 
+## P10 泛型算法
 
+### 10.1 泛型算法概述
 
+- 泛型的：可以用于不同类型的容器和不同类型的元素。
+- 容器中定义的操作非常有限，其他操作（例如：**查找特定元素、替换或删除一个特定元素、排序**等）都是通过一组泛型算法来实现的。
+- 大多数算法都定义在头文件algorithm中。头文件numeric还定义了一组算法。
+
+```C++
+int val = 42; // 将查找的值
+auto result = find(vec.begin(), vec.end(), val);
+std::cout << "val: " << val << (result == vec.end()? "存在" : "不存在") << std::endl;
+```
+
+- **泛型算法本身不会执行容器的操作，只会运用于迭代器上。 **
+
+### 10.2 初始泛型算法
+
+标准库提供了超过100个算法
+
+57、只读算法
+
+```C++
+// 对vec中的元素求和，和的初值为0（第三个参数还决定了返回类型，以及+的使用）
+int sum = accumulate(vec.begin(), vec.end(), 0);
+
+// 接受单一迭代器来表示第二个序列的算法，都假设第二个序列至少与第一个序列一样长
+// 第三个参数表示第二个序列的首元素
+// roster1可以是vector<string>, roster2可以是list<const char *>，不要求同样容器，只要能够访问和比较即可。
+equal(roster1.cbegin(), roster1.cend(), roster2.begin()); 
+```
+
+58、写容器元素的算法
+
+```C++
+fill(vec.begin(), vec.end(), 0); // 将每个元素重置为0
+// 将容器的一个子序列设置为10
+fill(vec.begin(), vec.begin() + vec.size/2, 10);
+
+vector<int> vec;
+// 第二个参数：要填充多少个元素
+fill_n(vec.begin(), vec.size(), 0); // 将所有元素重置为0
+fill_n(dest,n,val); // dest是起点，指向一个元素，而从dest开始至少需要包含n个元素
+```
+
+59、插入迭代器
+
+- back_inserter，是定义在头文件iterator中的一个函数，接受指向容器的引用，返回绑定该容器的插入迭代器。
+- **所有泛型算法都是通过迭代器操作的，不能调用容器的push_back等来增加元素**。
+
+```C++
+vector<int> vec;
+auto it = back_inserter(vec); // 通过它赋值会将元素添加到vec中
+*it = 42; // vec中现在有一个元素，值为42
+
+vector<int< vec2;
+// 正确：back_inserter创一个插入迭代器，可用来向vec添加元素
+// 每次赋值，会在迭代器上调用push_back，改变了容器的元素个数
+fill_n(back_inserter(vec2),10,0); // 添加10个元素到vec2
+```
+
+60、拷贝算法
+
+```C++
+int a1[] = {0,1,2,3,4,5,6,7,8,9};
+int a2[sizeof(a1)/size(*a1)]; // a2与a1大小一样，*a1是首元素a1[0]
+auto ret = copy(begin(a1),end(a1),a2); // 把a1的内容拷贝给a2
+
+// 将所有值为0的元素改为42
+replace(list.begin(),list.end(),0,42);
+
+// 使用back_inserter按需要增长目标序列
+replace_copy(ilist.begin(),ilist.end(),back_inserter(ivec),0,42);
+// 上面的语句调用后，ilist并未改变，ivec包含ilist的一份拷贝
+// 不过原来在ilist中值为0的元素在ivec中都变成了42
+```
+
+61、重排容器元素的算法
+
+```C++
+// 消除重复单词
+void elimDups(vector<string> &words)
+{
+    // 按字典顺序排序
+    sort(words.begin(), words.end());
+    // unique消除相邻的重复项，unique函数把不重复的元素放在前面，把重复的放在后面
+    // 排序在范围的前部，返回指向不重复区域之后一个位置的迭代器
+    auto end_unique = unique(words.begin(), words.end());
+    words.erase(end_unique, words.end());
+}
+```

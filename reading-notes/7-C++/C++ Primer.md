@@ -591,3 +591,112 @@ void elimDups(vector<string> &words)
     words.erase(end_unique, words.end());
 }
 ```
+
+### 10.3 lambda表达式、bind函数
+
+62、定制操作 
+
+```C++
+// sort默认使用元素类型的<运算符
+
+bool isShorter(const string &s1, const string &s2)
+{
+    return s1.size() < s2.size();
+}
+// 按长度由短至长排序words，sort可以接受一个二元谓词参数
+sort(words.begin(), words.end(), isShorter);
+```
+
+上面的sort函数的第三个参数是一个谓词：
+
+- 谓词是一个可调用的表达式
+- 返回结果是一个能用做条件的值
+- 谓词分为一元谓词和二元谓词
+- **谓词必须与算法相匹配，如果要多于2个参数，可考虑用lambda表达式或bind函数**
+
+stable_sort稳定排序算法，维持相等元素的原有顺序。
+
+63、lambda表达式
+
+- 可调用的代码单元，一个未命名的内联函数。
+
+```C++
+[capture list] (parameter list) -> return type { function body }
+```
+
+- 当以引用方式捕获一个变量时，必须保证在lambda执行变量时存在的。
+
+- 隐式捕获：让编译器根据lambda体中的代码来推断需要使用哪些变量。
+
+  1）若隐式是引用，则后面是拷贝方式的列表。[&, identifier_list]
+
+  2）若前面隐式是拷贝方式列表，则后面是引用方式的列表。[=, reference_list]
+
+  3）隐式在前面，显式在后面。
+
+64、可变lambda
+
+```C++
+void func3() {
+    size_t v1 = 42;
+    auto f = [v1]()mutable {return ++v1;}
+    v1 = 0;
+    auto j = f(); // j is 43
+}
+```
+
+多条谓语句，要添加尾置返回类型。（不然无法推断return类型）
+
+```C++
+std::transform(vi.begin(), vi.end(), vi.begin()
+              [](int)->int
+               {if(i<0) return -i; else return i;});
+// 将vi容器里面的数做一个转换（取绝对值），再放回vi容器。
+```
+
+65、参数绑定
+
+- 调用bind的一般形式为：auto newCallable = bind(callable, arg_list)。
+- 定义在function头文件中。
+- **一般什么时候用bind函数**：一个函数（比如泛型算法），第三个参数要放一个可调用对象，**但可调用对象只支持一个参数，而真正要用到多于2个参数，可以用lambda表达式。但lambda表达式比较适合仅用一次或两次，如果这个可调用对象经常要用，可以使用bind函数。**
+
+```C++
+using namespace std;
+using namespace std::placeholders;
+
+vector<string> words = {"string1", "abcde"};
+bool check_size(const string &s, string::size_type sz)
+{
+    return s.size() >= sz;
+}
+
+int main()
+{
+    // check6是一个可调用对象，接受一个string类型的参数
+    // 并用此string和值6来调用check_size
+    auto check6 = bind(check_size, _1, 6);
+    string s = "hello";
+    bool b1 = check6(s); // check6(s)会调用check_size(s, 6);
+}
+```
+
+```C++
+[bind的参数]
+// g是一个有2个参数的可调用对象
+auto g = bind(f,a,b,_2,c,_1);
+// g(X,Y)的调用会映射到：f(a,b,Y,c,X)
+
+[用bind重排参数位置]
+// 按单词长度由短至长排序
+sort(words.begin(), words.end(), isShorter);
+// 按单词长度由长至短排序
+sort(words.begin(), words.end(), bind(isShorter, _2, 1));
+// 当sort需要比较两个元素A和B时，调用isShorter(A,B)
+// 当sort比较两个元素时，就好像调用了isShorter(B,A)一样
+
+[绑定引用参数] 默认情况下，bind的那些不是占位符的参数会被拷贝
+// 错误：不能拷贝os
+for_each(words.begin(), words.end(), bind(print, os, _1, ''));
+// 对于ostream对象，不能拷贝。必须使用标准库的ref函数包含给定的引用
+for_each(words.begin(), words.end(), bind(print, ref(os), _1, ''))
+```

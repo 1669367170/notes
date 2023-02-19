@@ -700,3 +700,69 @@ for_each(words.begin(), words.end(), bind(print, os, _1, ''));
 // 对于ostream对象，不能拷贝。必须使用标准库的ref函数包含给定的引用
 for_each(words.begin(), words.end(), bind(print, ref(os), _1, ''))
 ```
+
+### 10.4  再探迭代器
+
+66、插入迭代器
+
+插入迭代器有3种类型：
+
+- back_inserter，创建一个使用push_back的迭代器；c.push__back(t)
+
+- front_inserter，创建一个使用push_front的迭代器；c.push_front(t)
+
+  ```C++
+  list<int> lst = {1,2,3,4}
+  list<int> lst2, lst3;
+  // front_inserter生成的迭代器，总是指向容器的第一个元素。
+  
+  // 拷贝完成后，lst2包含4,3,2,1
+  copy(lst.cbegin(), lst.cend(), front_inserter(lst2));
+  // 拷贝完成后，lst3包含1,2,3,4; lst3.begin()不会重新计算。
+  copy(lst.cbegin(), lst.cend(), inserter(lst3,lst3.begin()));
+  ```
+
+- inserter，创建一个使用insert的迭代器，插入指定迭代器之前的位置。c.insert(p,t)
+
+- *it, ++it, it++：这些操作虽然存在，但不会对it做任何事情，每个操作都返回it。
+
+  ```C++
+  *it = val; // it是由inserter生成的迭代器，效果与下面代码一样
+  
+  it = c.insert(iter, val); // it指向新插入的元素
+  ++it; // 递增it，使得它指向原来的元素位置。
+  ```
+
+67、流迭代器
+
+将对应的流，当做一个特定类型的元素序列来处理。
+
+- istream_iterator操作
+
+```C++ 
+istream_iterator<T> in(is); // in从输入流is读取类型为T的值
+istream_iterator<T> end;    // 读取类型为T的值的istream_iterator迭代器，表示尾后位置
+in1 == in2					// in1和in2必须读取相同类型。如果它们都是尾后迭代器，或绑定到相同的输入，则两者相等
+in1 != in2
+*in							// 返回从流中读取的值
+in->mem						// 与(*in).mem的含义相同
+++in, in++					// 使用元素类型所定义的>>运算符从输入流中读取下一个值。与以往一样，前置版本返回一个指向递增迭代器的引用，后置版本返回旧值。
+```
+
+- ostream_iterator操作
+
+```C++
+ostream_iterator<T> out(os); // out将类型为T的值写到输出流os中
+ostream_iterator<T> out(os,d); // out将类型为T的值写到输出流os中，每个值后面都输出一个d。d指向一个空字符结尾的字符数组。
+out = val; // 用<<运算符将val写入到out所绑定的ostream中。val的类型必须与out可写的类型兼容。
+*out, ++out, out++ // 这些运算符是存在的，但不对out做任何事情。每个运算符都返回out。
+```
+
+68、 反向迭代器
+
+```C++
+sort(vec.begin(), vec.end()); // 按"正常序"排序vec，升序
+sort(vec.rbegin(), vec.rend()); // 按逆序排序；将最小元素放在vec的末尾，降序
+```
+
+- 反向迭代器需要递减运算符，所以forward_list或流迭代器不能创建反向迭代器。

@@ -766,3 +766,45 @@ sort(vec.rbegin(), vec.rend()); // 按逆序排序；将最小元素放在vec的
 ```
 
 - 反向迭代器需要递减运算符，所以forward_list或流迭代器不能创建反向迭代器。
+
+### 10.5 泛型算法结构
+
+- 算法所要求的5个迭代器类别
+
+| 输入迭代器     | 只读，不写。单遍扫描，只能递增       |
+| -------------- | ------------------------------------ |
+| 输出迭代器     | 只写，不读。单遍扫描，只能递增       |
+| 前向迭代器     | 可读写，多遍扫描，只能递增           |
+| 双向迭代器     | 可读写，多遍扫描，可递增递减         |
+| 随机访问迭代器 | 可读写，多遍扫描，支持全部迭代器运算 |
+
+- 类似容器，迭代器的操作也分层次。高层类别的迭代器支持所有底层类别迭代器的操作。
+
+- 算法形参模式
+
+  大多数算法具有以下4种形式之一：
+
+  1）alg(beg, end, other args);	2）alg(beg, end, dest, other args);
+
+  3）alg(beg, end, beg2, other args); 4）alg(beg, end, beg2, end2, other args);
+
+- 算法命名和重载规范 
+
+  规定如何提供一个操作替代默认的运算符，以及算法将输出数据写入输入序列还是一个分离目的地的问题。
+
+  ```C++
+  // 将相邻重复元素删除
+  unique(beg,end); // 使用==运算符比较元素
+  unique(beg,end,comp); // 使用comp比较元素
+  
+  find(beg,end,val); // 在范围内查找特定元素第一次出现的位置
+  find_if(beg,end,pred); // 查找第一个令pred为true的元素
+  
+  reverse(beg,end); // 翻转输入范围中元素的顺序
+  reverse_copy(beg,end,dest); // 将元素逆序拷贝到dest
+  
+  // 从vi中删除奇数元素
+  remove_if(v1.begin(), v1.end(), [](int i){ return i % 2; });
+  // 将偶数元素从v1拷贝到v2，v1不变
+  remove_copy_if(v1.begin(), v1.end(), back_inserter(v2), [](int i){ return i % 2; });
+  ```

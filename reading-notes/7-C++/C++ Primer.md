@@ -808,3 +808,37 @@ sort(vec.rbegin(), vec.rend()); // 按逆序排序；将最小元素放在vec的
   // 将偶数元素从v1拷贝到v2，v1不变
   remove_copy_if(v1.begin(), v1.end(), back_inserter(v2), [](int i){ return i % 2; });
   ```
+
+### 10.6 特定容器算法
+
+69、list和forward_list成员函数版本的算法
+
+```C++
+lst.merge(lst2); // lst1和lst2都必须式有序的，将来自lst2中的元素合并入lst。
+lst.merge(lst2, comp); // 元素将从1st2中删除。在合并之后，lst2变为空。第一个版本使用<运算符；第二个版本使用给定的比较操作。
+lst.remove(val); // 调用erase删除掉与给定值相等（==）或令一元谓词为真的每个元素。
+lst.remove_if(pred);
+lst.reverse(); // 反转lst中元素的顺序
+lst.sort(); // 使用<或给定比较操作排序元素
+lst.sort(comp);
+lst.unique();
+lst.unique(pred); // 调用erase删除同一个值的连续拷贝。第一个版本使用==；第二个版本使用给定的二元谓词。
+```
+
+- 对于list和forward_list，应该优先使用成员函数版本的算法而不是通用算法。
+- 链表特有的版本会改变底层的容器。
+
+70、list和forward_list的splice成员函数参数（插入功能）
+
+```C++
+lst.splice(args)或flst.splice_after(args)
+```
+
+- splice算法是链表结构所特有的
+
+## P11 关联容器
+
+### 11.1 使用关联容器
+
+- 顺序容器：元素按在容器中的位置保存和访问的。关联容器：元素是按关键字来保存和访问的。
+- multimap：关键字可重复出现的map；multiset：关键字可重复出现的set。

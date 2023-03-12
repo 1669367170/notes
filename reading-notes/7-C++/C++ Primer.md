@@ -848,3 +848,84 @@ lst.splice(args)或flst.splice_after(args)
 71、关键字类型要求：
 
 有序容器：map、multimap、set、multiset关键字类型必须定义元素的比较的方法。**如果一个类型定义了"行为正常"的<运算符，则可以用作关键字类型。**
+
+### 11.3 关联容器操作
+
+- 类型别名
+
+```C++
+key_type 此容器类型的关键字类型
+mapped_type 每个关键字关联的类型：只适用于map
+value_type 对于set，与key_type相同；对于map，为pair<const key_type, mapped_type>
+```
+
+- map、set、multimap、multiset迭代器按关键字升序遍历元素。
+- 通常不对关联容器使用泛型算法。   
+
+- 添加元素
+
+```C++
+auto ret = word_count.insert({word, 1}); // ret.first: 指向具体给定关键字的元素; ret.second: 指出元素是否插入成功
+```
+
+- 删除元素
+
+```C++
+c.erase(b, e); // 删除迭代器对b和e所表示的范围中的元素。返回e
+```
+
+- 查找元素
+
+```C++
+low_bound和upper_bound不适用于无序容器。（multixxx的上界和下界    ）
+c.lower_bound(k); // 返回一个迭代器, 指向第一个关键字不小于k的元素
+c.upper_bound(k); // 返回一个迭代器, 指向第一个关键字大于k的元素
+c.equal_range(k); // 返回一个迭代器pair, 表示关键字等于k的元素的范围。若k不存在, pair的两个成员均等于c.end() 
+
+for(auto beg = authors.low_bound(item); end = authors.upper_bound(item); beg != end; ++beg)
+{
+	// [beg, end)    
+}
+// 以下相同方式
+for(auto pos = authors.equal_range(item); pos.first != pos.end(); ++pos.first)
+{
+    
+}
+```
+
+### 11.4 无序容器
+
+72、无序容器：不使用比较运算符来组织元素，而是使用哈希函数和关键字类型的==运算符。
+
+73、管理桶：无序容器的性能依赖于哈希函数的质量和桶的数量大小。
+
+无序容器管理操作：桶接口、桶迭代、哈希策略。
+
+74、无序容器默认情况下：
+
+- **使用关键字类型的==运算符比较元素；**
+- **用一个hash<key_type>类型的对象来生成每个元素的哈希值；**
+- 标准库为内置类型（包括指针），string，智能指针提供了hash模板。
+
+75、定义关键字类型为自定义类型的无序容器
+
+```C++
+// 为了将Sale_data用作关键字，我们需要提供：
+// 1、函数来代替==运算符
+// 2、哈希函数
+size_t hasher(const Sales_data &sd)
+{
+    return hash<string>()(sd.isbn()); // 利用标准库hash类型对象来计算
+}
+
+bool eqOp(const Sales_data &lhs, const Sales_data &rhs)
+{
+    return lhs.isbn() == rhs.isbn();
+}
+
+using SD_multiset = unordered_multiset<Sales_data, decltype(hasher)*, decltype(eqOp)*>
+// 参数是（桶大小、哈希函数指针、相等性判断运算指针）
+SD_multiset bookstore(42, hasher, eqOp);
+// 假设Foo有==运算符
+unordered_set<Foo, decltype(FooHash)*> foodSet(10, FooHash);
+```

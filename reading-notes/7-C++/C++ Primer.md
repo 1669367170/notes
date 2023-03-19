@@ -929,3 +929,276 @@ SD_multiset bookstore(42, hasher, eqOp);
 // 假设Foo有==运算符
 unordered_set<Foo, decltype(FooHash)*> foodSet(10, FooHash);
 ```
+
+## P12 智能指针
+
+### 12.1 动态内存和智能指针
+
+#### 12.1.1 shared_ptr
+
+- 栈对象：仅在其定义的程序块运行时才存在。（严格的生存期）
+
+- static对象：在使用之前分配，在程序结束时销毁。（严格的生存期）
+
+- 堆对象：动态分配的对象，在程序运行过程中可以随时建立或删除的对象。
+
+- **智能指针是模板。默认初始化的智能指针里面保存着一个空指针。**
+
+- shared_ptr和unique_ptr都支持的操作
+
+  ```c++
+  p.get() // 返回p中保存的指针。要小心使用，若智能指针释放了其对象，返回的指针所指向的对象也就消失了。
+  swap(p, q) // 交换p和q中的指针
+  ```
+
+- shared_ptr独有的操作
+
+  ```C++
+  shared_ptr<T> p(q) // p是shared_ptr q的拷贝：递增q的计数器。q中的指针必须能转换为T*。
+  p = q // 相互转换，递减p的引用计数，递增q的引用计数。
+  p.unique() // 若p的use_count为1，则返回true；否则返回false
+  p.use_count() // 返回与p共享对象的智能指针数量；主要用于调试，很慢
+  ```
+
+- 使用动态内存的一个常见原因是允许多个对象共享相同的状态。
+
+- 直接管理内存
+
+  ```C++
+  // 默认初始化
+  int *pi = new int; // pi指向一个动态分配的、未初始化的无名对象。
+  string *ps = new string; // 初始化为空string
+  
+  // 直接初始化
+  int *pi = new int(1024);
+  string *ps = new string(10, '9');
+  vector<int> *pv = new vector<int>{0,1,2,3,4,5,6,7,8,9};
+  
+  // 值初始化
+  string *ps1 = new string(); // 值初始化为空string
+  int *pi1 = new int(); // 值初始化为0
+  ```
+
+- 内存泄漏
+
+  **memory leak**是指**程序在申请内存后，无法释放已申请的内存空间**（例：比如new操作符创建的对象，未使用delete释放），一次内存泄露危害可以忽略，但内存泄露堆积后果很严重，无论多少内存，迟早会被占光。最终会导致out of memory。
+
+- 空悬指针
+
+  在delete之后，指针就变成了空悬指针。（例：或是局部作用域的指针？出了作用域内存已被释放了）
+
+  ```C++
+  int *p(new int(42)); // p指向动态内存
+  auto q = p; // q和p指向相同的内存
+  delete p; // p和q均变为无效
+  p = nullptr; // 指出p不再绑定到任何对象
+  // !!!q依然是空悬指针
+  ```
+
+- shared_ptr和new结合使用
+
+  ```C++
+  shared_ptr<int> p(new int(42)); // p指向一个值为42的int
+  shared_ptr<int> p1 = new int(1024); // 错误：隐式不可以（不能用普通的指针去构造一个智能指针），必须使用直接初始化方式
+  shared_ptr<int> p2(new int(1024)); // 正确：使用了直接初始化方式
+  ```
+
+  **智能指针的构造函数是显式调用的explicit。**
+
+- 默认情况下，用来初始化智能指针的普通指针，必须指向动态内存，否则必须提供操作符来代替delete。
+
+- 定义和改变shared_ptr的其他方法
+
+  ```C++
+  shared_ptr<T> p(q) // p管理内置指针的q所指向的对象；q必须指向new分配的内存，且能够转换为T*类型
+  shared_ptr<T> p(u) // p从unique_ptr u那里接管了对象的所有权；将u置为空
+  shared_ptr<T> p(q, d) // p接管了内置指针q所指向的对象的所有权。q必须能转换为T*类型。p将使用可调用对象d来代替delete
+  shared_ptr<T> p(p2, d) // p是shared_ptr p2的拷贝，唯一的区别是p将用可调用对象d来代替delete
+  p.reset()
+  p.reset(q)
+  p.reset(q, d)
+  // 若p是唯一指向器对象的shared_ptr，reset会释放此对象，若传递了可选的参数内置指针，会令p指向q，否则会将p置为空。若还传递了参数d，将会调用d而不是delete来释放q
+  ```
+
+- 内置指针和智能指针混用的风险
+
+  ```C++
+  void process(shared_ptr<int> ptr)
+  {
+      // 使用ptr
+  }// ptr离开作用域，被销毁
+  shared_ptr<int> p(new int(42)); // 引用计数为1
+  process(p); // 拷贝p会递增它的引用计数；在process中引用计数为2
+  int i = *p; // 引用计数为1
+  
+  // !!!用内置指针显式构造以一个shared_ptr，这样做很可能会导致错误。
+  int *x(new int(1024)); 	// 危险：x是一个普通指针
+  process(x);				// 错误：不能将int*转换为shared_ptr<int>
+  process(shared_ptr<int>(x)); // 合法的，但内存会被释放！
+  int j = *x; 				 // 未定义的：x是一个空悬指针！
+  ```
+
+- get：向不能使用智能指针的代码，传递一个内置指针。
+
+  **永远不要用get初始化另一个智能指针或为另一个智能指针赋值。**
+
+  ```C++
+  shared_ptr<int> p(new int(42)); // 引用计数为1
+  int *q = p.get(); // 正确：但使用q时要注意，不要让它管理的指针被释放！
+  { // 新程序块
+      // 未定义：两个独立的shared_ptr指向相同的内存
+      shared_ptr<int> p2(q);
+  } // 程序块结束，p2被销毁，它指向的内存被释放
+  int foo = *p；// 未定义：p指向的内存已经被释放了
+  
+  // note：p2->42<-p；p2指向42（计数为1），p也指向42（计数为1），但p和p2彼此不知道对方的存在。 
+  ```
+
+- reset：更新引用计数，如果需要的话，会释放p指向的对象。
+
+  ```C++
+  p = new int(1024); // 错误：不能将一个普通指针赋予shared_ptr
+  p.reset(new int(1024)); // 正确：p指向一个新对象(放弃原有指向的对象)
+  
+  if(!p.unique())
+  {
+      p.reset(new string(*p)); // 我们不是唯一用户；分配新的拷贝
+  } 
+  *p += newVal; // 现在我们知道自己是唯一的用户，可以改变对象的值
+  ```
+
+- 如果使用智能指针，即使程序块过早结束，也能正确释放内存
+
+  ```C++
+  void f()
+  {
+      shared_ptr<int> sp(new int(42)); // 分配一个新对象
+      // 在这段代码抛出一个异常，且在f中未被捕获
+  } // 在函数结束时shared_ptr自动释放内存
+  
+  // 直接管理内存，则不会
+  void f()
+  {
+      int *p = new int(42); // 动态分配一个对象
+      // 这段代码抛出一个异常，且在f中未被捕获
+      delete ip; // 在退出之前释放内存（若前面发生了异常，该段代码不会执行到）
+  }
+  ```
+
+- 使用类似的技术来管理不具有良好定义析构函数的类
+
+  ```C++
+  struct destination; // 表示我们正在连接什么
+  struct connection;  // 使用连接所需的信息
+  connection connect(destionation *); // 打开连接
+  void disconnect(connection); // 关闭给定的连接
+  void f(destination &d/*其他参数*/)
+  {
+      // 获得一个连接：记住使用完后要关闭它
+      connection c = connect(&d);
+      // 使用连接
+      // 如果我们在f退出前忘记调用disconnect，就无法关闭
+  }
+  
+  // 使用我们自己的释放操作！
+  void end_connection(connection *p)
+  {
+      disconnect(*p);
+  }
+  
+  void f(destination &d/*其他参数*/)
+  {
+      // 获得一个连接：记住使用完后要关闭它
+      connection c = connect(&d);
+      shared_ptr<connection> p(&c, end_connection); // end_connection相当于deleter
+      // 使用连接
+      // 当f退出时（即使是由于异常而退出），connection会被正确关闭
+  }
+  ```
+
+#### 12.1.2 unique_ptr
+
+- **unique_ptr不支持拷贝和赋值**
+
+  ```C++
+  unique_ptr<int> p2(p1); // 错误：不支持拷贝
+  unique_ptr<int> p3;
+  p3 = p2; // 错误：不支持赋值
+  ```
+
+- unique_ptr的操作
+
+  ```C++
+  unique_ptr<T> u1;
+  unique_ptr<T, D> u2;
+  unique_ptr<T, D> u(d); // 空unique_ptr，指向类型为T的对象，用类型为D的对象d代替delete
+  u = nullptr; // 释放u指向的对象，将u置为空
+  u.release(); // u放弃对指针的控制权，返回指针（把控制权返回了），并将u置为空
+  u.reset();   // 释放u指向的对象
+  u.reset(q);  // 如果提供了内置指针q，令u指向这个对象；否则将u置为空
+  u.reset(nullptr); 
+  ```
+
+- unique_ptr不支持拷贝和赋值，**但可以通过release或reset将指针的所有权从一个（非const）的转义给另一个**
+
+  ```C++
+  unique_ptr<string> p2(p1.release()); // release将p1置为空
+  unique_ptr<string> p3(new string("Trex"));
+  // 将所有权从p3转移给p2
+  p2.reset(p3.release()); // reset释放了p2原来指向的内存（p2指向了p3原来指向的内存）
+  p2.release(); // 内存泄漏（p2松手后，没有人接手p2指向的内存）
+  auto p = p2.release(); // OK, 记住要delete p
+  
+  // 不能拷贝的例外：可以拷贝或赋值一个将要被销毁的unique_ptr
+  unique_ptr<int> clone(int p)
+  {
+      // 正确：从int* 创建一个unique_ptr<int>
+      return unique_ptr<int>(new int(p)); // "临时对象生命周期要结束了，控制权交给返回值"
+  }
+  
+  unique_ptr<int> clone(int p)
+  {
+      unique_ptr<int> ret(new int(p)); // 局部对象
+      // ...
+      return ret; // 正确：返回的是即将销毁的局部对象
+  }
+  ```
+
+- 向unique_ptr传递删除器
+
+  ```C++
+  void f(destination &d/*其他参数*/)
+  {
+      connection c = connect(&d); // 打开连线
+      // 但p被销毁时，连接将会关闭
+      unique_ptr<connection, decltype(end_connection)*> p(&c, end_connection);
+      // 使用连接
+      // 当f退出时（即使是由于异常而退出），connection会被正确关闭
+  }
+  ```
+
+#### 12.1.3 weak_ptr
+
+- weak_ptr绑定到shared_ptr，不会改变引用计数。
+
+- weak_ptr的操作
+
+  ```C++
+  weak_ptr<T> w // 空weak_ptr可以指向类型为T的对象
+  weak_ptr<T> w(sp) // 与shared_ptr sp指向相同对象的weak_ptr。T必须能转换为sp指向的类型
+  w = p // p可以是一个shared_ptr或一个weak_ptr。赋值后w与p共享对象
+  w.reset() // 将w置为空
+  w.use_count() // 与w共享对象的shared_ptr的数量
+  w.expired() // 若w.use_count()为0，返回true（"过期了"） ，否则返回false 
+  w.lock() // 如果expired为true，返回一个空shared_ptr；否则返回一个指向w的对象的shared_ptr
+      
+  auto p = make_shared_ptr<int>(42);
+  weak_ptr<int> wp(p); // wp弱共享p；p的引用计数未改变
+  // 不能使用weak_ptr直接访问对象，必须调用lock
+  if (shared_ptr<int> np = wp.lock()) // 如果np不为空则条件成立
+  {
+      ...
+  }
+  ```
+
+  

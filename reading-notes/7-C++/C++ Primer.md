@@ -2,6 +2,8 @@
 
 视频链接：https://www.bilibili.com/video/BV1z64y1U7hs/?p=36&spm_id_from=333.880.my_history.page.click&vd_source=5ca8c9858efdf576a9c470964f99463a
 
+其他笔记参考链接：https://github.com/applenob/Cpp_Primer_Practice
+
 ## P7 类
 
 ### 7.1 定义抽象数据类型
@@ -1201,4 +1203,93 @@ unordered_set<Foo, decltype(FooHash)*> foodSet(10, FooHash);
   }
   ```
 
+
+### 12.2 动态数组
+
+- new和数组
+
+  动态数组不是数组类型，分配动态数组会得到一个元素类型的指针。
+
+  ```C++
+  // 调用get_size确定分配了多少个int
+  int *pia = new int[get_size()]; // pia指向第一个int
+  // 方括号中的大小必须是整数，但不必是常量
   
+  typedef int arrT[42]; // arrT表示42个int的数组类型
+  int *p = new arrT; // 编译器会执行: int *p = new int[42]
+  ```
+
+- 初始化动态分配对象的数组
+
+  ```C++
+  int *pia3 = new int[10]{0,1,2,3,4,5,6,7,8,9};
+  ```
+
+- 动态分配一个空数组是合法的，内置数组不行
+
+- 释放动态数组：delete[] pa;
+
+- 智能指针和动态数组
+
+  ```C++
+  unique_ptr<int[]> up(new int[10]); // up指向一个包含10个未初始化int的数组
+  up.release(); // 自动用delete[]销毁其管理的指针
+  // up不支持成员访问运算符!
+  for(size_t i = 0; i != 10; ++i)
+      up[i] = i;
+  ```
+
+  shared_ptr不直接支持管理动态数组。需要自定义删除器。
+
+- allocator类：将内存分配和对象构造分离
+
+  分配大块内存，但只在真正需要时才指向指向对象创建操作。
+
+  ```C++
+  // 将内存分配和对象构造组合在一起可能导致不必要的浪费
+  string *const p = new string[n]; // 构造n个空string
+  string s;
+  string *q = p; // q指向第一个string
+  while(cin >> s && q != p+n)
+      *q++ = s; // 赋予*q一个新值
+  const size_t size = q - p; // 记住我们读取了多少个string
+  // 使用数组
+  delete []p; // p指向一个数组，记得用delete[]来释放
+  ```
+
+  上面代码的问题：
+
+  1）我们可能不需要n个string；
+
+  2）每个对象都赋予了两遍值；
+
+  3）没有默认构造函数的类就不能动态分配数组了。
+
+  | 操作                   | 解释                                                         |
+  | ---------------------- | ------------------------------------------------------------ |
+  | `allocator<T> a`       | 定义了一个名为`a`的`allocator`对象，它可以为类型为`T`的对象分配内存 |
+  | `a.allocate(n)`        | 分配一段原始的、未构造的内存，保存`n`个类型为`T`的对象。     |
+  | `a.deallocate(p, n)`   | 释放从`T*`指针`p`中地址开始的内存，这块内存保存了`n`个类型为`T`的对象；`p`必须是一个先前由`allocate`返回的指针。且`n`必须是`p`创建时所要求的大小。在调用`deallocate`之前，用户必须对每个在这块内存中创建的对象调用`destroy`。 |
+  | `a.construct(p, args)` | `p`必须是一个类型是`T*`的指针，指向一块原始内存；`args`被传递给类型为`T`的构造函数，用来在`p`指向的内存中构造一个对象。 |
+  | `a.destroy(p)`         | `p`为`T*`类型的指针，此算法对`p`指向的对象执行析构函数。     |
+
+  ```C++
+  allocator<string> alloc; // 可以分配string的allocator对象
+  auto const p = alloc.allocate(n); // 分配n个未初始化的string
+  
+  auto q = p; // q指向最后构造的元素之后的位置
+  alloc.construct(q++); // *q为空字符串
+  alloc.construct(q++,10,'c'); // *q为cccccccccc
+  alloc.construct(q++,"hi"); // *q为hi
+  
+  cout << *p << endl; // 正确
+  cout << *q << endl; // 错误，q指向未构造的内存
+  
+  while(q!=p)
+      alloc.destroy(--q); // 释放我们正在构造的string, 我们只能对正在构造了的元素进行destroy操作
+  alloc.deallocated(p,n); // 释放内存
+  
+  // q有点类似尾后指针 end()
+  ```
+
+- 标准库为allocator类定义了两个伴随算法，可以在未初始化内存中创建对象。

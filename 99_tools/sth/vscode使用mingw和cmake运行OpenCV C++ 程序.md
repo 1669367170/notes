@@ -150,7 +150,7 @@
 
   Solve：**cmake .. -G "MinGW Makefiles"**
 
-![cmake q1](D:\01-study\02-env_build\cmake q1.png)
+![cmake q1](https://github.com/1669367170/notes/blob/master/99_tools/sth/imgs/cmake%2001.png)
 
 
 

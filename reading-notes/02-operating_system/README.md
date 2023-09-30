@@ -35,7 +35,15 @@
 ---
 ![P2-9](https://github.com/1669367170/notes/blob/master/reading-notes/02-operating_system/%E7%8E%8B%E9%81%93%E8%80%83%E7%A0%94-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/imgs/P2%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%869.png)
 ---
-![P2-10](https://github.com/1669367170/notes/blob/master/reading-notes/02-operating_system/%E7%8E%8B%E9%81%93%E8%80%83%E7%A0%94-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/imgs/P2%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%8610.png)
+![P2-10](../02-operating_system/王道考研-操作系统/imgs/P2%20进程管理10.png)
 ---
-![P2-11](https://github.com/1669367170/notes/blob/master/reading-notes/02-operating_system/%E7%8E%8B%E9%81%93%E8%80%83%E7%A0%94-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/imgs/P2%20%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%8611.png)
+![P2-11](../02-operating_system/王道考研-操作系统/imgs/P2%20进程管理11.png)
 ---
+## 第三章 内存管理
+![P3-1](../02-operating_system/王道考研-操作系统/imgs/P3%20内存管理1.png)
+---
+![P3-2](../02-operating_system/王道考研-操作系统/imgs/P3%20内存管理2.png)
+---
+![P3-3](../02-operating_system/王道考研-操作系统/imgs/P3%20内存管理3.png)
+---
+![P3-01](../02-operating_system/王道考研-操作系统/imgs/P3-01四种动态分配分区算法对比.png)

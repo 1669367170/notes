@@ -14,9 +14,14 @@
    （2）执行命令 cmake PATH 或者 ccmake PATH 生成 Makefile（ccmake 和 cmake 的区别在于前者提供了一个交互式的界面）。其中， PATH 是 CMakeLists.txt 所在的目录；
    （3）使用 make 命令进行编译。
    ```
+
 ### 2. 入门案例：单个源文件
 - 文件目录树  
-![Alt text](image.png)
+  ```
+  ./Demo1
+    |
+    +--- main.cc
+  ```
 - 编写CMakeLists.txt
   ```
   # CMake 最低版本号要求
@@ -32,6 +37,7 @@
     mingw32-make.exe -j8 # 编译
     ./CMake_Demo.exe 5 3 # 执行
     ```
+
 ### 3. 多个源文件
 #### 3.1 同一目录，多个源文件
 - 文件目录树
@@ -103,3 +109,67 @@
   add_library (MathFunctions ${DIR_LIB_SRCS})
   ```
 ### 4. 自定义编译选项
+CMake 允许为项目增加编译选项，从而可以根据用户的环境和需求选择最合适的编译方案。
+#### 4.1 修改CMakeLists文件
+  ```
+  cmake_minimum_required (VERSION 2.8)
+  project (Demo4)
+
+  # 加入一个配置头文件，用于处理 CMake 对源码的设置
+  configure_file (
+    "${PROJECT_SOURCE_DIR}/config.h.in"
+    "${PROJECT_BINARY_DIR}/config.h"
+  )
+
+  # 是否使用自己的 MathFunctions 库
+  option (USE_MYMATH
+         "Use provided math implementation" ON)
+
+  # 是否加入 MathFunctions 库
+  if (USE_MYMATH)
+    include_directories ("${PROJECT_SOURCE_DIR}/math")
+    add_subdirectory (math)  
+    set (EXTRA_LIBS ${EXTRA_LIBS} MathFunctions)
+  endif (USE_MYMATH)
+
+  aux_source_directory(. DIR_SRCS)
+  add_executable(Demo ${DIR_SRCS})
+  target_link_libraries (Demo  ${EXTRA_LIBS})
+  ```
+  （1）`configure_file 命令用于加入一个配置头文件 config.h，这个文件由 CMake 从 config.h.in 生成`，通过这样的机制，将可以`通过预定义一些参数和变量来控制代码的生成`；  
+  （2）`option 命令添加了一个 USE_MYMATH 选项`，并且默认值为 ON；  
+  （3）`根据 USE_MYMATH 变量的值来决定是否使用我们自己编写的 MathFunctions 库`。
+#### 4.2 修改main.cc文件
+引用config.h，让其根据 USE_MYMATH 的预定义值来决定是否调用标准库还是 MathFunctions 库
+  ```
+  #include "config.h"
+
+  #ifdef USE_MYMATH
+    #include "math/MathFunctions.h"
+  #else
+    #include <math.h>
+  #endif
+
+  ...
+
+  #ifdef USE_MYMATH
+    printf("Now we use our own Math library. \n");
+    double result = power(base, exponent);
+  #else
+    printf("Now we use the standard library. \n");
+    double result = pow(base, exponent);
+  #endif
+    printf("%g ^ %d is %g\n", base, exponent, result);
+    return 0;
+  ```
+#### 4.3 编写config.h文件
+  CMakeLists中通过configure_file引用了一个config.h文件，这个文件预定义了`USE_MYMATH`的值。`但我们并不直接编写这个文件`，为了方便从 CMakeLists.txt 中导入配置，我们编写一个 config.h.in 文件，内容如下：
+  ```
+  #cmakedefine USEU_MYMATH
+  ```
+  **CMake 会自动根据 CMakeLists 配置文件中的设置自动生成 config.h 文件。**
+#### 4.4 USE_MYMATH配置测试
+（1）USE_MYMATH 为 ON  ---> config.h 的内容为`#define USE_MYMATH`  
+（2）USE_MYMATH 为 OFF ---> config.h 的内容为`/* #undef USE_MYMATH */`
+
+### 5. 安装和测试

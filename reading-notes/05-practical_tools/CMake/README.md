@@ -8,12 +8,11 @@
 - "Write once, run everywhere"
 - <mark>允许开发者编写一种平台无关的 CMakeList.txt 文件来定制整个编译流程，然后再根据目标用户的平台进一步生成所需的本地化 Makefile 和工程文件；</mark>
 - 解决多种Make工具（GNU Make、QT的qmake，微软的MS nmake，BSD的Make(pmake)、Makepp等）无法跨平台编译的问题。
-- CMake 是一个比上述几种 make 更高级的编译配置工具。在Linux平台使用CMake生成Makefile并编译的流程：
-   ```
-   （1）写 CMake 配置文件 CMakeLists.txt；
-   （2）执行命令 cmake PATH 或者 ccmake PATH 生成 Makefile（ccmake 和 cmake 的区别在于前者提供了一个交互式的界面）。其中， PATH 是 CMakeLists.txt 所在的目录；
-   （3）使用 make 命令进行编译。
-   ```
+- CMake 是一个比上述几种 make 更高级的编译配置工具。在Linux平台使用CMake生成Makefile并编译的流程：  
+  （1）写 CMake 配置文件 CMakeLists.txt；  
+  （2）执行命令 cmake PATH 或者 ccmake PATH 生成 Makefile（ccmake 和 cmake 的区别在于前者提供了一个交互式的界面）。其中， PATH 是 CMakeLists.txt 所在的目录；  
+  （3）使用 make 命令进行编译。
+
 
 ### 2. 入门案例：单个源文件
 - 文件目录树  
@@ -173,3 +172,73 @@ CMake 允许为项目增加编译选项，从而可以根据用户的环境和�
 （2）USE_MYMATH 为 OFF ---> config.h 的内容为`/* #undef USE_MYMATH */`
 
 ### 5. 安装和测试
+CMake 也可以指定安装规则，以及添加测试。这两个功能分别可以通过在产生 Makefile 后使用 `make install` 和 `make test` 来执行
+#### 5.1 定制安装规则
+- 生成Makefile时，通过`DCMAKE_INSTALL_PREFIX`指定install的路径，否则会用默认路径/usr/local/？
+  ```
+  cmake .. -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX=install
+  ```
+- 先在 math/CMakeLists.txt 文件里添加下面两行，指明 MathFunctions 库的安装路径
+  ```
+  # 指定 MathFunctions 库的安装路径
+  install (TARGETS MathFunctions DESTINATION lib)
+  install (FILES MathFunctions.h DESTINATION include)
+  ```
+- 之后同样修改根目录的 CMakeLists 文件，在末尾添加下面几行：
+  ```
+  # 指定安装路径
+  install (TARGETS Demo DESTINATION bin)
+  install (FILES "${PROJECT_BINARY_DIR}/config.h"
+          DESTINATION include)
+  ```
+示例：
+![Alt text](./cmake_tutorial_a/imgs/image-1.png)
+
+#### 5.2 为工程添加测试
+- 添加测试同样很简单。CMake 提供了一个称为 CTest 的测试工具。我们要做的只是在项目根目录的 CMakeLists 文件中调用一系列的 `add_test` 命令。
+  ```
+  # 启用测试
+  enable_testing()
+
+  # 测试程序是否成功运行
+  add_test (test_run Demo 5 2)
+
+  # 测试帮助信息是否可以正常提示
+  add_test (test_usage Demo)
+  set_tests_properties (test_usage
+    PROPERTIES PASS_REGULAR_EXPRESSION "Usage: .* base exponent")
+
+  # 测试 5 的平方
+  add_test (test_5_2 Demo 5 2)
+
+  set_tests_properties (test_5_2
+  PROPERTIES PASS_REGULAR_EXPRESSION "is 25")
+
+  # 测试 10 的 5 次方
+  add_test (test_10_5 Demo 10 5)
+
+  set_tests_properties (test_10_5
+  PROPERTIES PASS_REGULAR_EXPRESSION "is 100000")
+
+  # 测试 2 的 10 次方
+  add_test (test_2_10 Demo 2 10)
+
+  set_tests_properties (test_2_10
+  PROPERTIES PASS_REGULAR_EXPRESSION "is 1024")
+  ```
+- 如果要测试更多的输入数据，像上面那样一个个写测试用例未免太繁琐。这时可以通过编写宏来实现
+  ```
+  # 定义一个宏，用来简化测试工作
+  macro (do_test arg1 arg2 result)
+    add_test (test_${arg1}_${arg2} Demo ${arg1} ${arg2})
+    set_tests_properties (test_${arg1}_${arg2}
+      PROPERTIES PASS_REGULAR_EXPRESSION ${result})
+  endmacro (do_test)
+
+  # 利用 do_test 宏，测试一系列数据
+  do_test (5 2 "is 25")
+  do_test (10 5 "is 100000")
+  do_test (2 10 "is 1024")
+  ```
+示例：
+![Alt text](./cmake_tutorial_a/imgs/image-2.png)

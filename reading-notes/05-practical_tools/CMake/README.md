@@ -1,6 +1,6 @@
 # CMake
 ## 一、cmake_tutorial_a
-参考链接：
+原文链接：
 - [全网最细的CMake教程！(强烈建议收藏)](https://zhuanlan.zhihu.com/p/534439206)  
 - [Code](https://github.com/wzpan/cmake-demo)
 
@@ -99,7 +99,7 @@
   target_link_libraries(Demo MathFunctions)
   ```
   （2）math目录下
-  - 使用命令 add_library 将 src 目录中的源文件编译为静态链接库。
+  - <mark>使用命令 add_library 将 src 目录中的源文件编译为静态链接库。</mark>
   ```
   # 查找当前目录下的所有源文件，并将名称保存到 DIR_LIB_SRCS 变量
   aux_source_directory(. DIR_LIB_SRCS)
@@ -135,9 +135,9 @@ CMake 允许为项目增加编译选项，从而可以根据用户的环境和�
   add_executable(Demo ${DIR_SRCS})
   target_link_libraries (Demo  ${EXTRA_LIBS})
   ```
-  （1）`configure_file 命令用于加入一个配置头文件 config.h，这个文件由 CMake 从 config.h.in 生成`，通过这样的机制，将可以`通过预定义一些参数和变量来控制代码的生成`；  
-  （2）`option 命令添加了一个 USE_MYMATH 选项`，并且默认值为 ON；  
-  （3）`根据 USE_MYMATH 变量的值来决定是否使用我们自己编写的 MathFunctions 库`。
+  （1）<mark>configure_file 命令用于加入一个配置头文件 config.h，这个文件由 CMake 从 config.h.in 生成</mark>，通过这样的机制，将可以<mark>通过预定义一些参数和变量来控制代码的生成</mark>；  
+  （2）<mark>option 命令添加了一个 USE_MYMATH 选项</mark>，并且默认值为 ON；  
+  （3）<mark>根据 USE_MYMATH 变量的值来决定是否使用我们自己编写的 MathFunctions 库</mark>。
 #### 4.2 修改main.cc文件
 引用config.h，让其根据 USE_MYMATH 的预定义值来决定是否调用标准库还是 MathFunctions 库
   ```
@@ -242,3 +242,120 @@ CMake 也可以指定安装规则，以及添加测试。这两个功能分别�
   ```
 示例：
 ![Alt text](./cmake_tutorial_a/imgs/image-2.png)
+
+### 6. 支持GDB
+让 CMake 支持 gdb 的设置也很容易，只需要指定 Debug 模式下开启 -g 选项，之后可以直接对生成的程序使用 gdb 来调试。
+```
+set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+```
+
+### 7. 添加环境检查
+有时候可能要对系统环境做点检查，例如要使用一个平台相关的特性的时候。在这个例子中，我们检查系统是否自带 pow 函数。如果带有 pow 函数，就使用它；否则使用我们定义的 power 函数。
+
+#### 7.1 添加 CheckFunctionExists 宏
+在顶层 CMakeLists 文件中添加 `CheckFunctionExists.cmake` 宏，并调用 check_function_exists 命令测试链接器是否能够在链接阶段找到 pow 函数
+```
+# 检查系统是否支持 pow 函数
+include (${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
+check_function_exists (pow HAVE_POW)
+```
+
+#### 7.2 预定义相关宏变量
+接下来修改 config.h.in 文件，预定义相关的宏变量。
+```
+// does the platform provide pow function?
+#cmakedefine HAVE_POW
+```
+
+#### 7.3 在代码中使用宏和函数
+修改main.cc，在代码中使用宏和函数
+```
+#ifdef HAVE_POW
+  printf("Now we use the standard library. \n");
+  double result = pow(base, exponent);
+#else
+  printf("Now we use our own Math library. \n");
+  double result = power(base, exponent);
+#endif
+```
+
+### 8. 添加版本号
+给项目添加和维护版本号是一个好习惯，这样有利于用户了解每个版本的维护情况，并及时了解当前所用的版本是否过时，或是否可能出现不兼容的情况。首先修改顶层 CMakeLists 文件，在 project 命令之后加入如下两行，分别指定当前的项目的主版本号和副版本号：
+```
+set (Demo_VERSION_MAJOR 1)
+set (Demo_VERSION_MINOR 0)
+```
+为了在代码中获取版本信息，我们可以修改 config.h.in 文件，添加两个预定义变量：
+```
+// the configured options and settings for Tutorial
+#define Demo_VERSION_MAJOR @Demo_VERSION_MAJOR@
+#define Demo_VERSION_MINOR @Demo_VERSION_MINOR@
+```
+可以在代码里面使用和打印：
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "config.h"
+#include "math/MathFunctions.h"
+
+int main(int argc, char *argv[])
+{
+    if (argc < 3){
+        // print version info
+        printf("%s Version %d.%d\n",
+            argv[0],
+            Demo_VERSION_MAJOR,
+            Demo_VERSION_MINOR);
+        printf("Usage: %s base exponent \n", argv[0]);
+        return 1;
+    }
+}
+```
+
+### 9. 生成安装包
+<mark>配置生成各种平台上的安装包，包括二进制安装包和源码安装包</mark>。为了完成这个任务，我们需要用到 `CPack` ，它同样也是由 CMake 提供的一个工具，专门用于打包。
+
+windows系统打包过程需要用到NSIS
+```
+NSIS，全称 Nullsoft Scriptable Install System，中文叫做 Nullsoft 脚本安装系统。它是用于创建 Windows 安装程序的专业开源系统。它被设计为尽可能小且灵活，因此非常适合 Internet 分发。
+
+它提供了安装、卸载、系统设置、文件解压缩等功能。NSIS 是基于脚本的，通过它的脚本语言来描述安装程序的行为和逻辑的。
+```
+
+- 修改顶层CMakeLists.txt：
+   ```
+   # 构建一个 CPack 安装包
+
+   # 导入 InstallRequiredSystemLibraries 模块，以便之后导入 CPack 模块
+   include (InstallRequiredSystemLibraries) 
+   # 设置一些 CPack 相关变量，包括版权信息和版本信息，其中版本信息用了上一节定义的版本号
+   set (CPACK_RESOURCE_FILE_LICENSE
+     "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+   set (CPACK_PACKAGE_VERSION_MAJOR "${Demo_VERSION_MAJOR}")
+   set (CPACK_PACKAGE_VERSION_MINOR "${Demo_VERSION_MINOR}")
+   # 导入 CPack 模块
+   include (CPack)
+   ```
+- 生成二进制安装包
+   ```
+   cpack -C CPackConfig.cmake
+   ```
+- 生成源码安装包
+   ```
+   cpack -C CPackSourceConfig.cmake
+   ```
+
+### 10. 项目迁移
+CMake 可以很轻松地构建出在适合各个平台执行的工程环境。而如果当前的工程环境不是 CMake ，而是基于某个特定的平台，也可以迁移到 CMake。
+
+常见的迁移场景：
+```
+autotools
+qmake：make converter 可以转换使用 QT 的 qmake 的工程；
+Visual Studio：vcproj2cmake.rb 可以根据 Visual Studio 的工程文件（后缀名是 .vcproj 或 .vcxproj）生成 CMakeLists.txt 文件等；
+CMakeLists.txt 自动推导：gencmake 根据现有文件推导 CMakeLists.txt 文件等；
+类似工具：SCons等。
+```

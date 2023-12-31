@@ -70,6 +70,9 @@ a矩阵和b矩阵的part1、part2分别做矩阵乘运算，获得矩阵c的part
 
 ## 二、相关接口API
 ### 1. 数据搬移接口 — DataCopy
+实现外部存储和内部存储间的数据搬运
+
+#### 1.1 功能说明
 - 支持的数据传输通路
     ```
     GM->A1
@@ -80,6 +83,16 @@ a矩阵和b矩阵的part1、part2分别做矩阵乘运算，获得矩阵c的part
     VECIN->VECOUT
     VECOUT->GM
     ```
+#### 1.2 定义原型
+- 普通数据搬运0级接口
+- 普通数据搬运2级接口
+- 增强数据搬运0级接口（相比普通数据增加了随路计算）
+- 切片数据搬运
+- 随路转换数据搬运（适用于cube数据搬运）
+  - 通路：GM->A1; GM->B1 (ND2NZ)
+  - 通路：VECOUT->GM (NZ2ND)
+
+#### 1.3 参数说明
 - DataCopyParams参数类型（普通数据搬运）
     ```
     blockCount: 包含的连续传输数据块个数;
@@ -90,6 +103,14 @@ a矩阵和b矩阵的part1、part2分别做矩阵乘运算，获得矩阵c的part
     ![Alt text](./imgs/image02.png)
 
 - DataCopyEnhancedParams参数类型（增强数据搬运）
+   ```
+   blockMode：数据搬移基本分形配置；BLOCK_MODE_NORMAL/BLOCK_MODE_MATRIX等
+   deqScale：随路精度转换辅助参数，即量化模式
+   deqValue：随路精度转换大小
+   sidStoreMode：用于配置存储模式或sid
+   isRelu：仅用于CO1->CO2通路，配置是否可以随路做线性整流操作
+   padMode：仅用于GM->A1/GM->B1通路，用于随路加pad补齐
+   ```
 
 - Nd2NzParams参数类型（ND2NZ随路格式转换）
     ![Alt text](./imgs/image03.png)
@@ -108,8 +129,13 @@ a矩阵和b矩阵的part1、part2分别做矩阵乘运算，获得矩阵c的part
     dstNzMatrixStride: 目的nz矩阵中，相邻nz矩阵起始地址间的偏移
     ``` 
 
+#### 1.4 注意事项
+- 增强搬运主要分为CO1->CO2及其他情况两种；
+- 随路格式转换nd2nz只支持GM->A1,GM->B1； nz2nd只支持VECOUT->GM；
+
 ### 2. 矩阵数据格式转换 — LoadData
-#### 2.1 LoadData分为Load2D和load3D  
+#### 2.1 功能说明
+LoadData分为Load2D和load3D  
 （1）Load2D
   - 源操作数/目的操作数的数据类型为uint8_t/int8_t时，<mark>分形矩阵大小在A1/A2上为16 * 32， 在B1/B2上为32 * 16</mark>。  
   - 源操作数/目的操作数的数据类型为uint16_t/int16_t/half时，分形矩阵在A1/B1/A2/B2上的大小为16*16。  
@@ -118,16 +144,20 @@ a矩阵和b矩阵的part1、part2分别做矩阵乘运算，获得矩阵c的part
   - image to column操作，将多维feature map转为二维矩阵
   - 支持如下数据通路：A1->A2；B1->B2
 
-#### 2.2 Load2D参数说明
+#### 2.2 定义原型
+
+#### 2.3 Load2D参数说明
 - 通用参数说明
-```
-dstLocal：目的操作数，类型为LocalTensor；A2(Zz格式)；B2(Zn格式)；A1/B1：无格式要求，一般为Nz格式；
-srcLocal：源操作数，类型为LocalTensor或GlobalTensor
-```
+  ```
+  dstLocal：目的操作数，类型为LocalTensor；A2(Zz格式)；B2(Zn格式)；A1/B1：无格式要求，一般为Nz格式；
+  srcLocal：源操作数，类型为LocalTensor或GlobalTensor
+  loadDataParams：LoadData参数结构体
+  ```
 
 - LoadData2dParams
-  - `startIndex`：分行矩阵ID，说明搬运起始位置为源操作数中第几个分形；
+  - `startIndex`：分行矩阵ID，说明搬运起始位置为源操作数中第几个分形，单位：512B
   - `repeatTimes`：迭代次数（每次迭代可处理512B数据，如int8 32*16*1B=512B）
+  - `srcStride`：相邻迭代间，源操作数前一个分形与后一个分形起始地址的间隔
   - sid：预留参数，配置为0
   - `dstGap`：相邻迭代间，目的操作数前一个分形结束地址与后一个分形起始地址的间隔；
   - `ifTranspose`：是否启用转置功能，true启用，false不启用；
@@ -137,6 +167,14 @@ srcLocal：源操作数，类型为LocalTensor或GlobalTensor
 - LoadData3DParamsV2
 
 ### 3. 矩阵计算接口 — Mmad
+#### 数据格式说明
+`Mmad` 函数对于输入数据的格式要求和输出数据的要求如下图，`矩阵 ABC 分别为 A2/B2/CO1 中的数据`。下图中每个小方格代表一个 512Byte 的分形矩阵（`对于 b8 来说是 16x32，对于 b16/b32 来说则是 16x16`）。下图中Z字形的黑色线条代表对应位置数据在昇腾AI处理器上的排列顺序，起始点是左上角，终点是右下角  
+A：Zz，大Z小z；
+B：Zn，大Z小n；
+C：Nz，大N小z；
+![Alt text](./imgs/image07.png)
+
+
 ### 4. 管理Tensor数据结构Queue队列的接口 — EnQue,Deque
 
 ## 三、相关背景知识
